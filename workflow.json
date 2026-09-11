@@ -1,0 +1,650 @@
+{
+  "name": "AI mail agent",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -640,
+        -128
+      ],
+      "id": "86588c69-4e15-43f3-999c-33910ee03c1d",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "4C0ddY26SzHqakqM",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Classify this email into one category: [Careers, Technical Support, Academic, Networking, Spam,Business Leads].  Subject: {{ $json.subject }}   Respond with only the category name.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -336,
+        -128
+      ],
+      "id": "93d31280-a9d9-4405-9dde-a5a59060c7cf",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        80
+      ],
+      "id": "532d43f4-56b5-4d9f-829e-03507bc3089b",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "PukaSqpU6Om5HTJu",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "Academic",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "79324f74-2f4a-4934-a4ae-8fcc8216353a"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Academic path"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c63da849-f23d-4179-b8f9-7c378ead4a95",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "Careers",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Careers"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "6eb3441f-77eb-4ca5-a2da-b51937a213a6",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "Spam",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Spam"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "6450f875-87e9-4475-a598-094ec45c191c",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "Business Leads",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Business"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "d130109c-30a3-4b81-a3b8-cd4e21ebbe98",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "Networking",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Networking"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        176,
+        -176
+      ],
+      "id": "aa41a05a-6bb4-42b4-898b-8422eb0c3859",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are Adina, a BSAI student. Draft a SHORT (2-3 sentences) response to this academic email. \n\nSubject: {{ $node[\"Gmail Trigger\"].json[\"subject\"] }}\n\nInstruction: Thank them for the information and say I will review it. Be professional but concise. Do not hallucinate technical issues. Output only the message.Write a professional reply to this email.\n\nSubject: {{ $node[\"Gmail Trigger\"].json[\"subject\"] }}\nContent: {{ $node[\"Gmail Trigger\"].json[\"text\"] }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        640,
+        -736
+      ],
+      "id": "18ec3f57-5c5b-4a71-bb1f-72b5d63e8139",
+      "name": "Basic LLM Chain1"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        640,
+        -560
+      ],
+      "id": "f3dd6b9d-a6b8-4f7e-9c1c-0a73fc4a7808",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "PukaSqpU6Om5HTJu",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "=Re: {{ $node[\"Gmail Trigger\"].json[\"subject\"] }}",
+        "message": "={{ $json.text }}",
+        "options": {
+          "fromAlias": "adinarehman018@gmail.com",
+          "threadId": "={{ $node[\"Gmail Trigger\"].json[\"threadId\"] }}",
+          "sendTo": "={{ $node[\"Gmail Trigger\"].json[\"from\"][\"value\"][0][\"address\"] }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1072,
+        -752
+      ],
+      "id": "3a8f3266-1534-4635-9a66-238f1f9c10d0",
+      "name": "Create a draft",
+      "webhookId": "e63b2b41-1914-4b2f-a55d-c2a33d1a4df0",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "4C0ddY26SzHqakqM",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1z9gSXBpL4bAWlZovkXsQdjbHHG0caz8dFGbeqssj7OE",
+          "mode": "list",
+          "cachedResultName": "Job Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1z9gSXBpL4bAWlZovkXsQdjbHHG0caz8dFGbeqssj7OE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1087095289,
+          "mode": "list",
+          "cachedResultName": "Job Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1z9gSXBpL4bAWlZovkXsQdjbHHG0caz8dFGbeqssj7OE/edit#gid=1087095289"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $node[\"Gmail Trigger\"].json[\"date\"] }}",
+            "Subject": "={{ $node[\"Gmail Trigger\"].json[\"subject\"] }}",
+            "Snippet": "={{ $json.text }}",
+            "Company": "={{ $node[\"Gmail Trigger\"].json[\"from\"][\"value\"][0][\"name\"] }})"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Subject",
+              "displayName": "Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Snippet",
+              "displayName": "Snippet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        912,
+        -448
+      ],
+      "id": "2bc9ce16-b547-4deb-8c6c-34ae38957e2b",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "diMdmfLAsi0OTdPs",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $node[\"Gmail Trigger\"].json[\"id\"] }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        -240
+      ],
+      "id": "a4e7220f-5518-442f-b386-f83339301b73",
+      "name": "Mark a message as read",
+      "webhookId": "ab4ee573-6e69-429c-b028-e5039d7d5e29",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "4C0ddY26SzHqakqM",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are Adina, a BSAI student and AI developer. Draft a short, energetic reply to this networking email.\n\nInstruction: Thank them for reaching out. Mention I'm currently deep in AI automation projects (n8n/Docker) but I'd love to stay in touch. Keep it under 3 sentences. Output only the message.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        576,
+        32
+      ],
+      "id": "fe74ec74-7da2-4684-9fef-bca4e21802a2",
+      "name": "Basic LLM Chain2"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        576,
+        256
+      ],
+      "id": "454d9b65-8786-4525-ad51-9ea9b4c50d5c",
+      "name": "Groq Chat Model2",
+      "credentials": {
+        "groqApi": {
+          "id": "PukaSqpU6Om5HTJu",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "=Re: {{ $node[\"Gmail Trigger\"].json[\"subject\"] }}",
+        "message": "={{ $node[\"Basic LLM Chain2\"].json[\"text\"] }}",
+        "options": {
+          "sendTo": "={{ $node[\"Gmail Trigger\"].json[\"from\"][\"value\"][0][\"address\"] }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        944,
+        16
+      ],
+      "id": "19fe1e1b-a97e-46fa-80b1-e3318520292a",
+      "name": "Create a draft1",
+      "webhookId": "e4243d96-f40b-419d-abb6-531fc5d826ec",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "4C0ddY26SzHqakqM",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are Adina, a Technical Founder and AI Automation Specialist. Draft a professional, concise response to this business inquiry.\n\nSubject: {{ $node[\"Gmail Trigger\"].json[\"subject\"] }}\nBody: {{ $json.text }}\nend at best regard and Adina Rehman on next line\n\nInstruction: \n1. Thank them for the inquiry.\n2. Briefly mention that I specialize in agentic workflows and AI integration.\n3. Ask 1-2 clarifying questions about their timeline or technical requirements to qualify the lead.\n4. Suggest a brief discovery call. \nKeep it under 4 sentences. Output only the draft.\n\"Use a professional yet slightly witty tone, like a tech-savvy founder",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1152,
+        -128
+      ],
+      "id": "2f1f7d2a-5d85-43d8-8dcb-f4aa136c56e8",
+      "name": "Basic LLM Chain3"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1152,
+        112
+      ],
+      "id": "c5e72482-98be-4284-b592-913db463cb3e",
+      "name": "Groq Chat Model3",
+      "credentials": {
+        "groqApi": {
+          "id": "PukaSqpU6Om5HTJu",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "=Re: {{ $node[\"Gmail Trigger\"].json[\"subject\"] }}",
+        "message": "={{ $json.text }}",
+        "options": {
+          "sendTo": "={{ $node[\"Gmail Trigger\"].json[\"from\"][\"value\"][0][\"address\"] }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1616,
+        -144
+      ],
+      "id": "20a2cbf3-8d93-423a-8283-7156db801d56",
+      "name": "Create a draft2",
+      "webhookId": "ce36fa24-0333-4da8-89f0-abb2d9fab50b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "4C0ddY26SzHqakqM",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark a message as read",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "Create a draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain2": {
+      "main": [
+        [
+          {
+            "node": "Create a draft1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain3": {
+      "main": [
+        [
+          {
+            "node": "Create a draft2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "Asia/Karachi",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "65a9146c-f7ba-4f02-9628-caa6dbf7a3cc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "186c3d6c447f54bbe04504e83b484e166b6b3696bf90dc7fc56a0b87f3c731c1"
+  },
+  "id": "gzHf2XrTHeof30Jv",
+  "tags": []
+}
